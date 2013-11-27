@@ -77,7 +77,7 @@ class c4s :
     for k in self.ssbData.keys() :
       fun = 'self.eval'+k
       colData = self.ssbData[k]
-      f = open(k+'.txt', 'w')
+      f = open(k+'.ssb.txt', 'w')
       for site in colData.keys() :
         now = str(datetime.datetime.now())
         (val, color) = eval(fun)(colData[site])
@@ -86,7 +86,7 @@ class c4s :
       f.close()
 
   def createWLCGLHCbMapping(self):
-    f = open('WLCGSiteMapping.txt','w')
+    f = open('WLCGSiteMapping.ssb.txt','w')
     for site in self.topoDict['WLCG'].keys() : # self.usedSites :
       now = str(datetime.datetime.now())
       val = self.topoDict['WLCG'][site]
