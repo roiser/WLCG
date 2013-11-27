@@ -22,7 +22,7 @@ class c4s :
   ### start probe functions ###
   ### eval functions ###
 
-  def evalCvmfsVersion(self, val): 
+  def evalCvmfsVersion(self, val, site): 
     if val == 'nfs' : return (val, 'green')
     if val == 'n/a' : return (val, 'red')
     x = 2
@@ -34,25 +34,32 @@ class c4s :
       else : return (val, 'orange')
     else : return (val, 'red')
 
-  def evalCvmfsRepoRevision(self, val):
+  def evalCvmfsRepoRevision(self, val, site):
     return (val, 'green')
 
-  def evalCvmfsMountPoint(self, val):
+  def evalCvmfsMountPoint(self, val, site):
     if val and val == '/cvmfs/lhcb.cern.ch' : return (val, 'green')
     else : return (val, 'orange')
 
-  def evalCvmfsCondDBMountPoint(self, val):
+  def evalCvmfsCondDBMountPoint(self, val, site):
     if val == 'yes' : return (val, 'orange')
     else : return (val, 'green')
 
-  def evalCvmfsProbeTime(self, val):
-    return (val, 'green')
+  def evalCvmfsProbeTime(self, val, site):
+    pTime = datetime.datetime.strptime(val,'%Y-%m-%dT%H:%M:%S')
+    curTime = datetime.datetime.now()
+    delta = curTime - pTime
+    if delta < 3600 : return (val, 'green')
+    elif delta < 10800 : return (val, 'orange')
+    else : return (val, 'red')
 
-  def evalCvmfsStratumOnes(self, val) :
+  def evalCvmfsStratumOnes(self, val, site) :
+    if self.ssbData['CvmfsRepoRevision'][site] == 'nfs' : return ('n/a', 'white')
     if val : return (val, 'green')
     else: return ('none', 'red')
 
-  def evalCvmfsNumSquids(self, val):
+  def evalCvmfsNumSquids(self, val, site):
+    if self.ssbData['CvmfsRepoRevision'][site] == 'nfs' : return ('n/a', 'white')
     if val :
       if int(val) > 1 : return (val, 'green')
       else : return (val, 'orange')
@@ -140,7 +147,7 @@ class c4s :
       f = open(k+'.ssb.txt', 'w')
       for site in colData.keys() :
         now = str(datetime.datetime.now())
-        (val, color) = eval(fun)(colData[site])
+        (val, color) = eval(fun)(colData[site], site)
         url = 'http://localhost'
         f.write('%s\t%s\t%s\t%s\t%s\n' % (now, site, val, color, url))
       f.close()
@@ -150,7 +157,7 @@ class c4s :
     for site in self.topoDict['WLCG'].keys() :
       now = str(datetime.datetime.now())
       val = self.topoDict['WLCG'][site]
-      color = 'green'
+      color = 'white'
       url = 'http://localhost'
       f.write('%s\t%s\t%s\t%s\t%s\n' % (now, site, val, color, url))
 
