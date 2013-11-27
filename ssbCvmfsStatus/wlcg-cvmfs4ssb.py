@@ -14,22 +14,21 @@ class c4s :
     self.topologyURL = 'http://lhcb-web-dirac.cern.ch/topology/lhcb_topology.xml'
     self.wlcgBaseUrl = 'http://wlcg-mon.cern.ch/dashboard/request.py/'
     self.wlcgGetUrl = self.wlcgBaseUrl+'getplotdata?columnid=%d&time=24&sites=all&batch=1'
-    self.ssbColumns = {'INFO: CVMFS version installed ' : 'CvmfsVersion',
-                       'INFO: repository revision ' : 'CvmfsRepoRevision',
-                       'INFO: Variable VO_LHCB_SW_DIR points to CVMFS mount point ' : 'CvmfsMountPoint',
-                       'INFO: repository /cvmfs/lhcb-conddb.cern.ch availabl' : 'CvmfsCondDBMountPoint',
-                       'INFO: Mandatory mount point /cvmfs/lhcb.cern.ch is nfs mount poin' : 'CvmfsViaNfs'
-                       }
-    self.usedSites = []
+    self.ssbMetrics = ['CvmfsVersion','CvmfsRepoRevision','CvmfsMountPoint','CvmfsCondDBMountPoint']
+#     self.ssbColumns = {'INFO: CVMFS version installed ' : 'CvmfsVersion',
+#                        'INFO: repository revision ' : 'CvmfsRepoRevision',
+#                        'INFO: Variable VO_LHCB_SW_DIR points to CVMFS mount point ' : 'CvmfsMountPoint',
+#                        'INFO: repository /cvmfs/lhcb-conddb.cern.ch availabl' : 'CvmfsCondDBMountPoint',
+#                        'INFO: Mandatory mount point /cvmfs/lhcb.cern.ch is nfs mount poin' : 'CvmfsViaNfs'
+#                        }
     self.ssbData = {}
-    for k in self.ssbColumns.keys() : self.ssbData[self.ssbColumns[k]] = {}
+    for k in self.ssbMetrics : self.ssbData[k] = {}
 
 
-  def evalCvmfsViaNfs(self, val):
-    if val and val == 't' : return ('nfs', 'green')
 
   def evalCvmfsVersion(self, val): 
-    if val == 'vmfs/lhcb.cern.ch is nfs mount point' : return ('nfs', 'green')
+    if val == 'nfs' : return (val, 'green')
+    if val == 'n/a' : return (val, 'red')
     x = 2
     maxDiff = range(x+1)
     deplV = map(lambda x: int(x), val.split('.'))
@@ -47,9 +46,46 @@ class c4s :
     else : return (val, 'orange')
 
   def evalCvmfsCondDBMountPoint(self, val):
-    if val and val == 'e' : return ('yes', 'orange')
-    else : return ('no', 'green')
+    if val == 'yes' : return (val, 'orange')
+    else : return (val, 'green')
 
+
+
+  def getValCvmfsVersion(self, site, probe):
+    pat1 = 'INFO: CVMFS version installed '
+    pat2 = 'INFO: Mandatory mount point /cvmfs/lhcb.cern.ch is nfs mount point'
+    ver = 'n/a'
+    for line in probe :
+      if line[:len(pat1)] == pat1 :
+        ver = line[len(pat1):]
+      elif line[:len(pat2)] == pat2 :
+        ver = 'nfs'
+    self.ssbData['CvmfsVersion'][site] = ver
+    
+  def getValCvmfsRepoRevision(self, site, probe):
+    pat = 'INFO: repository revision '
+    rev = 'n/a'
+    for line in probe :
+      if line[:len(pat)] == pat :
+        rev = line[len(pat):]
+        break 
+    self.ssbData['CvmfsRepoRevision'][site] = rev
+
+  def getValCvmfsMountPoint(self, site, probe):
+    pat = 'INFO: Variable VO_LHCB_SW_DIR points to CVMFS mount point '
+    mp = 'n/a'
+    for line in probe :
+      if line[:len(pat)] == pat :
+        mp = line[len(pat):]
+    self.ssbData['CvmfsMountPoint'][site] = mp
+
+  def getValCvmfsCondDBMountPoint(self, site, probe):
+    pat = 'INFO: repository /cvmfs/lhcb-conddb.cern.ch available'
+    cm = 'no'
+    for line in probe :
+      if line[:len(pat)] == pat :
+        cm = 'yes'
+    self.ssbData['CvmfsCondDBMountPoint'][site] = cm
 
 
   def populateTopology(self):
@@ -57,24 +93,28 @@ class c4s :
     for ent in topo['csvdata'] : self.topoDict[self.myVO][ent['SiteId']] = ent['Status']
 
   def collectInfo(self):
-    matchLines = self.ssbColumns.keys()
+#    matchLines = self.ssbColumns.keys()
     info = json.loads(urllib.urlopen(self.wlcgGetUrl%self.cvmfsColumnNo).read())
     for metric in info['csvdata'] :
       itemFound = []
       site = self.topoDict[self.myVO][metric['SiteId']]
       tinfo = urllib.urlopen(self.wlcgBaseUrl+metric['URL']).read()
-      for tl in tinfo.split('\n') :
-        for ml in matchLines :
-          if tl[:len(ml)] == ml :
-            if self.ssbColumns[ml] == 'CvmfsViaNfs' : ml = 'INFO: CVMFS version installed '
-            #if not self.ssbData[self.ssbColumns[ml]].has_key(site) :
-            if self.ssbColumns[ml] not in itemFound : 
-              itemFound.append(self.ssbColumns[ml])
-              self.ssbData[self.ssbColumns[ml]][site] = tl[len(ml):]
-              if site not in self.usedSites : self.usedSites.append(site)
+      tl = tinfo.split('\n')
+      for metric in self.ssbMetrics : eval('self.getVal'+metric)(site, tl)
+####
+#       for tl in tinfo.split('\n') :
+#         for ml in matchLines :
+#           if tl[:len(ml)] == ml :
+#             if self.ssbColumns[ml] == 'CvmfsViaNfs' : ml = 'INFO: CVMFS version installed '
+#             #if not self.ssbData[self.ssbColumns[ml]].has_key(site) :
+#             if self.ssbColumns[ml] not in itemFound : 
+#               itemFound.append(self.ssbColumns[ml])
+#               self.ssbData[self.ssbColumns[ml]][site] = tl[len(ml):]
+####
+
               
   def writeSSBColumns(self):
-    for k in self.ssbData.keys() :
+    for k in self.ssbMetrics :
       fun = 'self.eval'+k
       colData = self.ssbData[k]
       f = open(k+'.ssb.txt', 'w')
@@ -87,7 +127,7 @@ class c4s :
 
   def createWLCGLHCbMapping(self):
     f = open('WLCGSiteMapping.ssb.txt','w')
-    for site in self.topoDict['WLCG'].keys() : # self.usedSites :
+    for site in self.topoDict['WLCG'].keys() :
       now = str(datetime.datetime.now())
       val = self.topoDict['WLCG'][site]
       color = 'green'
