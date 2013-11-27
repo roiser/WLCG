@@ -1,5 +1,8 @@
 *.py[cod]
 
+# wlcg ssb
+*.ssb.txt
+
 # vi
 *~
 
