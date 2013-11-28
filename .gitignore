@@ -1,5 +1,6 @@
 *.py[cod]
 
+cvmfsVersion.txt
 # wlcg ssb
 *.ssb.txt
 
