@@ -6,7 +6,8 @@ from xml.parsers import expat
 class c4s :
 
   def __init__(self):
-    self.requestedVersion = '2.1.15'
+    self.cvmfsBaseVersionFile = 'cvmfsVersion.txt'
+    self.requestedVersion = ''
     self.myVO = 'LHCb'
     self.cvmfsColumnNo = 202
     self.wlcgTopoColumnNo = 144
@@ -171,10 +172,24 @@ class c4s :
 
   ### end probe functions ####
 
+  def xmlStartElement(self, name, attrs):
+    if name == 'atp_site' : self.currWLCGSite = attrs['name']
+    if name == 'group' and attrs['type'] == 'LHCb_Site' : 
+      self.topoDict['WLCG'][attrs['name']] = self.currWLCGSite
 
-  def populateTopology(self):
+  def bootstrap(self):
+    # get WLCG Mon mapping VO site name <-> site ID
     topo = json.loads(urllib.urlopen(self.wlcgGetUrl%self.wlcgTopoColumnNo).read())
     for ent in topo['csvdata'] : self.topoDict[self.myVO][ent['SiteId']] = ent['Status']
+    # read CVMFS base line version number
+    f = open(self.cvmfsBaseVersionFile, 'r')
+    self.requestedVersion = f.read()
+    f.close()
+    # read topology file and create mapping VO site name <-> WLCG site name
+    topo = urllib.urlopen(self.topologyURL).read()
+    p = expat.ParserCreate()
+    p.StartElementHandler = self.xmlStartElement
+    p.Parse(topo)
 
   def clearSsbData(self, site):
     for metric in self.ssbMetrics : 
@@ -216,20 +231,8 @@ class c4s :
       url = 'http://localhost'
       f.write('%s\t%s\t%s\t%s\t%s\n' % (now, site, val, color, url))
 
-  def xmlStartElement(self, name, attrs):
-    if name == 'atp_site' : self.currWLCGSite = attrs['name']
-    if name == 'group' and attrs['type'] == 'LHCb_Site' : 
-      self.topoDict['WLCG'][attrs['name']] = self.currWLCGSite
-
-  def parseXmlTopology(self) :
-    topo = urllib.urlopen(self.topologyURL).read()
-    p = expat.ParserCreate()
-    p.StartElementHandler = self.xmlStartElement
-    p.Parse(topo)
-
   def run(self):
-    self.parseXmlTopology()
-    self.populateTopology()
+    self.bootstrap()
     self.collectInfo()
     self.writeSSBColumns()
     self.createWLCGLHCbMapping()
