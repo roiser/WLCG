@@ -13,16 +13,21 @@ class c4s :
     self.wlcgTopoColumnNo = 144
     self.topoDict = {'WLCG':{}, self.myVO:{}}
     self.ssbTimePat = '%Y-%m-%dT%H:%M:%S'
+    self.dontpanic = 'http://en.wikipedia.org/wiki/Don%27t_Panic_%28The_Hitchhiker%27s_Guide_to_the_Galaxy%29#Don.27t_Panic'
     self.topologyURL = 'http://lhcb-web-dirac.cern.ch/topology/lhcb_topology.xml'
     self.wlcgBaseUrl = 'http://wlcg-mon.cern.ch/dashboard/request.py/'
     self.wlcgGetUrl = self.wlcgBaseUrl+'getplotdata?columnid=%d&time=24&sites=all&batch=1'
-    self.ssbMetrics = ['CvmfsVersion','CvmfsRepoRevision','CvmfsMountPoint','CvmfsCondDBMountPoint', 'CvmfsProbeTime', 'CvmfsStratumOnes', 'CvmfsNumSquids', 'CvmfsProbeNoInfo']
+    self.wlcgSiteBaseLink = 'http://lhcb-web-dirac.cern.ch/DIRAC/LHCb-Production/undefined/grid/SiteStatus/display?name='
+    self.ssbMetrics = ['CvmfsVersion','CvmfsRepoRevision','CvmfsMountPoint','CvmfsCondDBMountPoint', 'CvmfsProbeTime', 'CvmfsStratumOnes', 'CvmfsNumSquids', 'CvmfsProbeNoInfo', 'CvmfsProbeLink']
     self.ssbData = {}
     for k in self.ssbMetrics : self.ssbData[k] = {}
 
 
   ### start probe functions ###
   ### eval functions ###
+
+  def evalCvmfsProbeLink(self, val, site):
+    return (val, 'green')
 
   def evalCvmfsProbeNoInfo(self, val, site) :
     if self.ssbData['CvmfsProbeTime'][site] == 'no probe' : return ('n/a (no probe)', 'grey')
@@ -91,6 +96,9 @@ class c4s :
 
   ### retrieval functions ###
 
+  def getValCvmfsProbeLink(self, site, probe, metric):
+    self.ssbData['CvmfsProbeLink'][site]=metric['URL']
+
   def getValCvmfsProbeNoInfo(self, site, probe, metric): 
     val = 'none'
     pat = 'INFO: Mandatory tests exectuted successfully, now continuing with testing optional repositories'
@@ -148,7 +156,8 @@ class c4s :
     self.ssbData['CvmfsCondDBMountPoint'][site] = cm
 
   def getValCvmfsProbeTime(self, site, probe, metric):
-    self.ssbData['CvmfsProbeTime'][site] = metric['EndTime']
+    self.ssbData['CvmfsProbeTime'][site] = metric['URL'].split('&')[1].split('=')[1][:-1]
+#    self.ssbData['CvmfsProbeTime'][site] = metric['EndTime']
 
   def getValCvmfsStratumOnes(self, site, probe, metric) :
     strats = []
@@ -218,7 +227,8 @@ class c4s :
       for site in colData.keys() :
         now = str(datetime.datetime.now())
         (val, color) = eval(fun)(colData[site], site)
-        url = 'http://localhost'
+        url = self.dontpanic
+        if self.ssbData['CvmfsProbeLink'].get(site): url = self.wlcgBaseUrl+self.ssbData['CvmfsProbeLink'][site]
         f.write('%s\t%s\t%s\t%s\t%s\n' % (now, site, val, color, url))
       f.close()
 
@@ -228,7 +238,7 @@ class c4s :
       now = str(datetime.datetime.now())
       val = self.topoDict['WLCG'][site]
       color = 'white'
-      url = 'http://localhost'
+      url = self.wlcgSiteBaseLink+site
       f.write('%s\t%s\t%s\t%s\t%s\n' % (now, site, val, color, url))
 
   def run(self):
