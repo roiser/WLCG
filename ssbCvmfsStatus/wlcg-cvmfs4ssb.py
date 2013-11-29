@@ -13,7 +13,7 @@ class c4s :
     self.wlcgTopoColumnNo = 144
     self.topoDict = {'WLCG':{}, self.myVO:{}}
     self.ssbTimePat = '%Y-%m-%dT%H:%M:%S'
-    self.dontpanic = 'http://en.wikipedia.org/wiki/Don%27t_Panic_%28The_Hitchhiker%27s_Guide_to_the_Galaxy%29#Don.27t_Panic'
+    self.dontpanic = 'http://www.adluge.com/wp-content/uploads/2013/09/homer-simpson-doh.gif'
     self.topologyURL = 'http://lhcb-web-dirac.cern.ch/topology/lhcb_topology.xml'
     self.wlcgBaseUrl = 'http://wlcg-mon.cern.ch/dashboard/request.py/'
     self.wlcgGetUrl = self.wlcgBaseUrl+'getplotdata?columnid=%d&time=24&sites=all&batch=1'
@@ -74,8 +74,8 @@ class c4s :
     pTime = datetime.datetime.strptime(val,self.ssbTimePat)
     curTime = datetime.datetime.now()
     delta = (curTime - pTime).seconds
-    if delta < 3600 : return (val, 'green')
-    elif delta < 10800 : return (val, 'orange')
+    if delta < 21600 : return (val, 'green')
+    elif delta < 43200 : return (val, 'orange')
     else : return (val, 'red')
 
   def evalCvmfsStratumOnes(self, val, site) :
