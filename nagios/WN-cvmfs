@@ -8,6 +8,7 @@
 # 1.0 : initial version
 # 1.1 : testing of optional repositories, testing of VO_{VO}_SW_DIR variable points to CVMFS mount point
 # 1.2 : testing of nfs export on sites
+# 1.3 : remove enventual trailing slash in VO_{VO}_SW_DIR
 
 ## variables to configure the probe
 DEF_REPOSITORIES="lhcb.cern.ch"        # space delimited list of repositories to test and must work
@@ -20,7 +21,7 @@ VO_NAME="LHCB"                         # name of the VO in all upper case letter
 # 
 # some globally used variables
 #
-SCRIPT_REVISION="1.2c"
+SCRIPT_REVISION="1.3-pre1"
 
 INFO=0          
 WARNING=1     # CernVM-FS resource consumption high or 
