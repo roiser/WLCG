@@ -137,7 +137,7 @@ test_basic_functionality() {
 
   # Check that VO_SW_DIR env variable exists
   VO_SW_DIR_VAL_ORG="${!VO_SW_DIR_VAR}"
-  VO_SW_DIR_VAL=`pushd ${VO_SW_DIR_VAL_ORG} > /dev/null 2>&1; pwd -P | sed s#\/\$## ; popd > /dev/null 2>&1`
+  VO_SW_DIR_VAL=`pushd ${VO_SW_DIR_VAL_ORG} > /dev/null 2>&1; pwd -P | sed 's#\/\$##' ; popd > /dev/null 2>&1`
   if [ "x${VO_SW_DIR_VAL_ORG}" != "x${VO_SW_DIR_VAL}" ] ; then report "INFO" "variable ${VO_SW_DIR_VAR} contains symlinks (${VO_SW_DIR_VAL_ORG} -> ${VO_SW_DIR_VAL})" "True" ; fi
   if [ "x" = "x${VO_SW_DIR_VAL}" ] ; then report "ERROR" "environment variable ${VO_SW_DIR_VAR} not defined" "True" ; fi
 
