@@ -1,6 +1,7 @@
-# Probe for testing CVMFS functioning at WLCG grid sites, the probe will test the basic functionality of the
-# cvmfs client and tests per mandatory and optional repository. In case of nfs exports a test will be done
-# whether the mount point is of type nfs, no further tests can be done in this case
+# Probe for testing CVMFS functioning at WLCG grid sites, inspired by the orginal nagios test by the CVMFS 
+# development team in CERN PH/SFT. The probe will check the basic functionality of the cvmfs clients on the
+# worker nodes and perform tests per mandatory and optional repository. In case of nfs exports only a single
+# test whether the mount point name is of type nfs will be executed, no further tests can be done in this case. 
 
 # Author: stefan.roiser@cern.ch
 
@@ -8,7 +9,7 @@
 # 1.0 : initial version
 # 1.1 : testing of optional repositories, testing of VO_{VO}_SW_DIR variable points to CVMFS mount point
 # 1.2 : testing of nfs export on sites
-# 1.3 : remove enventual trailing slash in VO_{VO}_SW_DIR
+# 1.3 : check mount point dir for OSG sites, remove enventual trailing slash in VO_{VO}_SW_DIR
 
 ## variables to configure the probe
 DEF_REPOSITORIES="lhcb.cern.ch"        # space delimited list of repositories to test and must work
@@ -31,9 +32,14 @@ BRIEF_INFO="OK"
 LONG_INFO=""
 RETURN_STATUS=$INFO
 
-VO_SW_DIR_VAR="VO_${VO_NAME}_SW_DIR"
+if [ -z $OSG_GRID ] ; then 
+  VO_SW_DIR_VAR="VO_${VO_NAME}_SW_DIR"
+  VO_SW_DIR_VAL_EXT=""
+else
+  VO_SW_DIR_VAR="OSG_APP"
+  VO_SW_DIR_VAL_EXT="/cmssoft/cms"
+fi
 VO_SW_DIR_OK="False"
-
 
 #
 # helper functions
@@ -137,8 +143,9 @@ test_basic_functionality() {
 
   # Check that VO_SW_DIR env variable exists
   VO_SW_DIR_VAL_ORG="${!VO_SW_DIR_VAR}"
-  VO_SW_DIR_VAL=`pushd ${VO_SW_DIR_VAL_ORG} > /dev/null 2>&1; pwd -P | sed 's#\/\$##' ; popd > /dev/null 2>&1`
-  if [ "x${VO_SW_DIR_VAL_ORG}" != "x${VO_SW_DIR_VAL}" ] ; then report "INFO" "variable ${VO_SW_DIR_VAR} contains symlinks (${VO_SW_DIR_VAL_ORG} -> ${VO_SW_DIR_VAL})" "True" ; fi
+  VO_SW_DIR_VAL_FULL=${VO_SW_DIR_VAL_ORG}${VO_SW_DIR_VAL_EXT}
+  VO_SW_DIR_VAL=`pushd ${VO_SW_DIR_VAL_FULL} > /dev/null 2>&1; pwd -P | sed 's#\/\$##' ; popd > /dev/null 2>&1`
+  if [ "x${VO_SW_DIR_VAL_FULL}" != "x${VO_SW_DIR_VAL}" ] ; then report "INFO" "variable ${VO_SW_DIR_VAR} contains symlinks (${VO_SW_DIR_VAL_FULL} -> ${VO_SW_DIR_VAL})" "True" ; fi
   if [ "x" = "x${VO_SW_DIR_VAL}" ] ; then report "ERROR" "environment variable ${VO_SW_DIR_VAR} not defined" "True" ; fi
 
 }
