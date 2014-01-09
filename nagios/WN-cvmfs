@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Probe for testing CVMFS functioning at WLCG grid sites, inspired by the orginal nagios test by the CVMFS 
 # development team in CERN PH/SFT. The probe will check the basic functionality of the cvmfs clients on the
 # worker nodes and perform tests per mandatory and optional repository. In case of nfs exports only a single
