@@ -34,7 +34,7 @@ BRIEF_INFO="OK"
 LONG_INFO=""
 RETURN_STATUS=$INFO
 
-if [ -z $OSG_GRID ] ; then 
+if [ -z $OSG_APP ] ; then 
   VO_SW_DIR_VAR="VO_${VO_NAME}_SW_DIR"
   VO_SW_DIR_VAL_EXT=""
 else
