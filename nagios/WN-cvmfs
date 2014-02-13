@@ -24,7 +24,7 @@ VO_NAME="LHCB"                         # name of the VO in all upper case letter
 # 
 # some globally used variables
 #
-SCRIPT_REVISION="1.3-pre1"
+SCRIPT_REVISION="1.3-pre2"
 
 INFO=0          
 WARNING=1     # CernVM-FS resource consumption high or 
@@ -80,7 +80,7 @@ get_xattr() {
   local strict; strict=$4
   local result; result=''
      
-  result=`/usr/bin/attr -q -g $xattrname $repo`
+  result=`/usr/bin/attr -q -g $xattrname $repo` > /dev/null 2>&1
   if [ $? -ne 0 ]; then
     report "WARNING: failed to read $xattrname attribute in $repo" $strict
   fi
@@ -88,6 +88,10 @@ get_xattr() {
   eval $_resultvar="'$result'"
 }
 
+is_nfs_mnt() {
+  local mnt_repo=$1
+  return [ "x`/usr/bin/stat -f -L -c %T $nfs_mnt`" = "xnfs" ] 
+}
 
 test_nfs_mount() {
   local nfs='True'
@@ -96,7 +100,8 @@ test_nfs_mount() {
   for REPO in $DEF_REPOSITORIES; do
     nfs_mnt="/cvmfs/$REPO"
     if [ -d $nfs_mnt ] ; then
-      if [ "x`/usr/bin/stat -f -L -c %T $nfs_mnt`" = "xnfs" ] ; then 
+      is_nfs_mnt $mnt_repo
+      if [ $? -eq 0 ] ; then 
         VERS_INSTALLED="nfs"
         report "INFO" "Mandatory mount point $nfs_mnt is nfs mount point" "True"
       else
@@ -122,6 +127,8 @@ test_nfs_mount() {
 
 test_basic_functionality() {
   # Check if rpm is installed
+  is_nfs_mnt `echo $DEF_REPOSITORIES | cut -d" " -f1`
+  if [ $? -eq 0 ]; then test_nfs_mount; fi
   RPM_INST=`rpm -qa | grep -E "cvmfs-"`
   if [ "x$RPM_INST" = "x" ] 
   then 
@@ -173,13 +180,19 @@ test_repository() {
   fi
 
   get_xattr VERS_LOADED version $mnt_repo $strict
-  report "INFO" "CVMFS version loaded $VERS_LOADED" $strict
+  if [ $? -ne 0 ]; then report "ERROR" "cannot retrieve attribute 'version' for $mnt_repo"
+  else report "INFO" "CVMFS version loaded $VERS_LOADED" $strict
+  fi
 
   VERS_INSTALLED=`/usr/bin/cvmfs2 --version 2>&1 | awk '{ print $NF }'`
-  report "INFO" "CVMFS version installed $VERS_INSTALLED" $strict
+  if [ $? -ne 0 ]; then report "ERROR" "cannot execute '/usr/bin/cvmfs2 --version'"
+  else report "INFO" "CVMFS version installed $VERS_INSTALLED" $strict
+  fi 
 
   get_xattr REPO_REVISION revision $mnt_repo $strict
-  report "INFO" "repository revision $REPO_REVISION" $strict
+  if [ $? -ne 0 ]; then report "ERROR" "cannot retrieve attribute 'version' for $mnt_repo"
+  else report "INFO" "repository revision $REPO_REVISION" $strict
+  fi
 
   get_xattr CVMFS_IOERR nioerr $mnt_repo $strict
   if [ $CVMFS_IOERR -gt 0 ] ; then report "WARNING" "$CVMFS_IOERR I/O errors detected" $strict; fi
