@@ -4,6 +4,7 @@
 # development team in CERN PH/SFT. The probe will check the basic functionality of the cvmfs clients on the
 # worker nodes and perform tests per mandatory and optional repository. In case of nfs exports only a single
 # test whether the mount point name is of type nfs will be executed, no further tests can be done in this case. 
+# Some specific tests were taken from the CVMFS worker node test, extended with VO specific tests
 
 # Author: stefan.roiser@cern.ch
 
