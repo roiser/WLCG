@@ -91,7 +91,9 @@ get_xattr() {
 
 is_nfs_mnt() {
   local mnt_repo=$1
-  return [ "x`/usr/bin/stat -f -L -c %T $nfs_mnt`" = "xnfs" ] 
+  local nfs_mnt="/cvmfs/$mnt_repo"
+  [ "x`/usr/bin/stat -f -L -c %T $nfs_mnt`" = "xnfs" ] 
+  return $?
 }
 
 test_nfs_mount() {
