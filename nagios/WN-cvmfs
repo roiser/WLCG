@@ -226,7 +226,7 @@ test_repository() {
 
   # connectivity tests
   CVMFS_HOSTS=`/bin/echo "$CVMFS_SERVER_URL" | /bin/sed 's/,\|;/ /g' | sed s/@org@/$ORG/g | sed s/@fqrn@/$FQRN/g`
-  CVMFS_PROXIES=`/bin/echo "$CVMFS_HTTP_PROXY" | tr \| \\n | tr \; \\n | grep -v auto | tr \\n \; | sed 's/;/ /g'`
+  CVMFS_PROXIES=`/bin/echo "$CVMFS_HTTP_PROXY" | tr \\| \\\\n | tr \\; \\\\n | grep -v auto | tr \\\\n \\; | sed 's/;/ /g'`
   report "INFO" "testing network connectivity - SERVERS cross PROXIES" $strict
   report "INFO" "Servers: $CVMFS_HOSTS" $strict
   report "INFO" "Proxies: $CVMFS_PROXIES" $strict
